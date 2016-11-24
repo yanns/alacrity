@@ -27,21 +27,24 @@ impl Parse for HttpParser {
 
         let mut parser = http::parser::ResponseParser::new();
         let response = match parser.parse_response(buf) {
-            Ok(Some(response)) => response,
-            Ok(None) => panic!("Not enough bytes to parse response"),
+            Ok(Some(response)) => {
+                debug!("Parser created: {:?}", response);
+                Async::Ready(
+                    Frame::Message{
+                        message: response,
+                        body: false,
+                    }
+                )
+            }
+            Ok(None) => {
+                debug!("Not enough bytes to parse response");
+                Async::NotReady
+            }
             Err(e) => panic!("Error parsing response: {:?}", e),
         };
 
-        debug!("Parser created: {:?}", response);
 
-        return Ok(
-            Async::Ready(
-                Frame::Message{
-                    message: response,
-                    body: false,
-                }
-            )
-        );
+        Ok(response)
     }
 }
 
